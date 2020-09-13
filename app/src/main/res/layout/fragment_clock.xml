@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".clock">
+    tools:viewBindingIgnore="true"
+    tools:context=".Fragments.clock">
 
    <TextView
        android:layout_width="match_parent"

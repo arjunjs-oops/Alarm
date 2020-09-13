@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    tools:viewBindingIgnore="true"
     tools:context=".MainActivity">
 
     <FrameLayout
@@ -19,6 +20,7 @@
     app:itemRippleColor="@color/cardview_shadow_start_color"
     app:itemTextColor="#ffffff"
     android:id="@+id/bni"
+    android:background="@color/colorPrimaryDark"
     style="@style/Widget.MaterialComponents.BottomNavigationView.Colored"
     app:menu="@menu/bottom"
     app:itemTextAppearanceInactive="?attr/textAppearanceCaption"
