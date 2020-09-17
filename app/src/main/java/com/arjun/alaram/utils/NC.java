@@ -3,10 +3,15 @@ import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 
 import com.arjun.alaram.R;
 
@@ -15,6 +20,7 @@ public class NC extends ContextWrapper {
     public static final String channelID = "channelID";
     public static final String channelName = "Channel Name";
     private NotificationManager mManager;
+    PendingIntent pendingIntent;
 
 
     public NC(Context base) {
@@ -23,6 +29,9 @@ public class NC extends ContextWrapper {
             createChannel();
         }
     }
+
+
+
 
     @TargetApi(Build.VERSION_CODES.O)
     private void createChannel() {
@@ -46,4 +55,7 @@ public class NC extends ContextWrapper {
                 .setSmallIcon(R.drawable.ic_baseline_alarm_add_24)
                 .setContentText("Your AlarmManager is working.");
     }
+
+
+
 }
