@@ -5,29 +5,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/parent"
+    android:layout_marginTop="10dp"
+
     tools:context=".Fragments.alarm">
 
     <TimePicker
         android:id="@+id/timePicker"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:numbersBackgroundColor="@null"
         android:layout_alignParentTop="true" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/alarm_state"
-        android:gravity="center_horizontal"
-        android:layout_alignParentStart="true">
-        <Button
-            android:id="@+id/alarm_on"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:textSize="18sp" />
+        android:id="@+id/btngrp"
+        android:layout_toEndOf="@+id/timePicker">
 
         <Button
             android:id="@+id/alarm_off"
@@ -36,7 +31,13 @@
             android:text="Stop"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:textSize="18sp" />
-
+        <Button
+            android:id="@+id/alarm_on"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start"
+            android:textSize="18sp" />
     </LinearLayout>
 
 
@@ -45,17 +46,20 @@
         android:id="@+id/alarm_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/timePicker"
+        android:layout_toEndOf="@+id/timePicker"
         android:layout_centerHorizontal="true"
         android:paddingTop="10dp"
         android:text="Did you set the alarm?"
-        android:textSize="25sp" />
+        android:textSize="20sp" />
 
     <Spinner
         android:id="@+id/spinner"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-
+        android:layout_below="@+id/btngrp"
+        android:layout_margin="10dp"
+        android:layout_toEndOf="@+id/timePicker"
         android:textSize="38sp" />
+
+
 </RelativeLayout>
