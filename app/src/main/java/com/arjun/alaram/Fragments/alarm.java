@@ -1,212 +1,189 @@
 package com.arjun.alaram.Fragments;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.icu.text.DateFormat;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.net.wifi.aware.AttachCallback;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.TimePicker;
 
-import com.arjun.alaram.Broadcast.Receiver;
-import com.arjun.alaram.DFragmet.Custom;
-import com.arjun.alaram.POJO.Data;
+//import com.arjun.alaram.Broadcast.RingtonePlayingService;
+import com.arjun.alaram.Broadcast.NC;
+import com.arjun.alaram.Broadcast.RingtonePlayingService;
+import com.arjun.alaram.Broadcast.Singleton;
 import com.arjun.alaram.R;
-import com.arjun.alaram.RV.Adapter;
-import com.arjun.alaram.Room.PVM;
-import com.arjun.alaram.utils.SingleTone;
-import com.arjun.alaram.utils.TimePicker;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.switchmaterial.SwitchMaterial;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
+import java.util.Objects;
+
+import static android.content.Context.ALARM_SERVICE;
 
 
-public class alarm extends Fragment implements
-        TimePickerDialog.OnTimeSetListener,
-        Adapter.onClickIO,Custom.onInputSelected{
-    RecyclerView recyclerView;
-    Adapter adapter;
-    FloatingActionButton actionButton;
-    Uri notification;
-    private int position;
-    PVM pvm;
-    private  Ringtone r;
-    List<Data> dataArrayList = new ArrayList<>();
+public class alarm extends Fragment{
+
+    AlarmManager alarm_manager;
+    TextView alarm_state;
+    TimePicker timePicker;
+    RelativeLayout layout;
+    Boolean pendingIntent;
+    Calendar calendar;
+    private static final String NamePreference="AlarmAppPreference";
+    SharedPreferences preferences ;
+    SharedPreferences.Editor editor;
+    Intent my_intent;
+    Singleton singleton;
+    Button alarm_off, alarm_on ;
 
 
     public alarm() {
 
     }
 
-
+    @Override
+    public void onConfigurationChanged(Configuration newConfig){
+        super.onConfigurationChanged(newConfig);
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE || newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+            try {
+                FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+                if (Build.VERSION.SDK_INT >= 26) {
+                    ft.setReorderingAllowed(false);
+                }
+                ft.detach(this).attach(this).commit();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        pvm =  ViewModelProviders.of(this).get(PVM.class);
-        pvm.getAllData().observe(this, new Observer<List<Data>>() {
-            @Override
-            public void onChanged(List<Data> data) {
-                adapter.setDynamically(data);
-                dataArrayList = data;
-            }
-        });
-         notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ActivityCompat.requestPermissions(Objects.requireNonNull(getActivity()),new String[]{Manifest.permission.FOREGROUND_SERVICE}, PackageManager.PERMISSION_GRANTED);
+        }
 
 
     }
 
 
+
+    @SuppressLint("CommitPrefEdits")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         View view =inflater.inflate(R.layout.fragment_alarm, container, false);
-        recyclerView = view.findViewById(R.id.parent_alarm);
-        actionButton = view.findViewById(R.id.open);
-        setRecyclerView();
-        Uri alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        r = RingtoneManager.getRingtone(getContext(), alert);
+
+        timePicker =view.findViewById(R.id.timePicker);
+        layout =view.findViewById(R.id.parent);
+        alarm_manager = (AlarmManager) getActivity().getSystemService(ALARM_SERVICE);
+        alarm_state = (TextView) view.findViewById(R.id.alarm_state);
+        alarm_off = (Button) view.findViewById(R.id.alarm_off);
+        alarm_on = (Button) view.findViewById(R.id.alarm_on);
+        preferences = getActivity().getSharedPreferences(NamePreference,Context.MODE_PRIVATE);
+        editor = preferences.edit();
+
+       String setterTime = preferences.getString("Time","Did you set the alarm?");
+       pendingIntent = preferences.getBoolean("pendingIntent",false);
+         calendar = Calendar.getInstance();
+
         return view;
 
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        actionButton.setOnClickListener(floatingClickListener);
+        super.onViewCreated(view, savedInstanceState);
+        alarm_off.setOnClickListener(alarm_offListener);
+        alarm_on.setOnClickListener(alarm_onListener);
+        Intent service = getActivity().getIntent();
+        if(service.hasExtra("Stop_alarm")){
+            getActivity().stopService(service);
+        }
 
 
     }
-
-    FloatingActionButton.OnClickListener floatingClickListener = new View.OnClickListener() {
+    Button.OnClickListener alarm_offListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            Custom custom = new Custom();
-            custom.setTargetFragment(alarm.this,1);
-            custom.show(getParentFragmentManager(),"Input");
+                Intent broad = getActivity().getIntent();
+                if(broad.hasExtra("Stop")||pendingIntent){
+                 Log.e("TAG", "onCreate:This is called ");
+                         Ringtone ringtone = Singleton.getAlarmOnce(getActivity().getApplicationContext());
+                         ringtone.stop();
+                     }
+                getActivity().stopService(new Intent(getActivity(),RingtonePlayingService.class));
+                alarm_state.setText("Alarm Off!");
+                editor.putString("Time", null);
+                editor.putBoolean("pendingIntent", false);
+                editor.commit();
+            NC nc = new NC(getActivity().getApplicationContext());
+            nc.getManager().cancel(1);
 
         }
     };
 
-
-
-
-    @Override
-    public void onTimeSet(android.widget.TimePicker timePicker, int i, int i1) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY,i);
-        calendar.set(Calendar.MINUTE,i1);
-        calendar.set(Calendar.SECOND,0);
-         Data data =  dataArrayList.get(position);
-         data.setCalender(DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
-         pvm.updateData(data);
-        createAlarm(calendar);
-
-
-
-    }
-    public void cancelAlarm(int toogleId ) {
-        AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(getActivity(), Receiver.class);
-      PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), toogleId, intent, 0);
-        alarmManager.cancel(pendingIntent);
-    }
-
-
-    private void createAlarm(final Calendar calendar) {
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-                Intent intent = new Intent(getActivity(), Receiver.class);
-                intent.putExtra("Ringtone", "android.resource://com.arjun.alaram/raw/notification");
-                intent.putExtra("title",dataArrayList.get(position).getTitle());
-                intent.putExtra("uri",notification);
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity()
-                        ,dataArrayList.get(position).getUid(),
-                        intent,0);
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        r.play();
-                    }
-                },4000);
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP,calendar.getTimeInMillis(),pendingIntent);
-            }
-
-        }, 1000);
-    }
-
-
-    private void setRecyclerView(){
-        adapter = new Adapter(this);
-        adapter.setDynamically(dataArrayList);
-        recyclerView.setAdapter(adapter);
-        ItemTouchHelper touchHelper = new ItemTouchHelper(simpleCallback);
-        touchHelper.attachToRecyclerView(recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-
-    }
-    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0,ItemTouchHelper.LEFT|ItemTouchHelper.RIGHT) {
+    Button.OnClickListener alarm_onListener = new View.OnClickListener() {
         @Override
-        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            return false;
+        public void onClick(View view) {
+            // Set calendar based on user input
+            calendar.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
+            calendar.set(Calendar.MINUTE, timePicker.getMinute());
+            int hour = timePicker.getHour();
+            int minute = timePicker.getMinute();
+            String hour_string = String.valueOf(hour);
+            String minute_string = String.valueOf(minute);
+            // Handles to format time data
+            if (hour > 12) hour_string = String.valueOf(hour - 12);
+            if (minute < 10) minute_string = "0" + String.valueOf(minute);
+            String quote = "Alarm set to: " + hour_string + ":" + minute_string;
+            alarm_state.setText(quote);
+            editor.putString("Time",quote);
+            editor.putBoolean("pendingIntent",true);
+            pendingIntent=true;
+            editor.commit();
+            // Create intent for AlarmReceiver class, send only once
+             my_intent = new Intent(getActivity().getApplicationContext(), RingtonePlayingService.class);
+            callService(my_intent,hour,minute);
+
+
+
+
+
         }
 
-        @Override
-        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-            int position = viewHolder.getAdapterPosition();
-            pvm.deleteData(dataArrayList.get((position)));
-        }
     };
-    @Override
-    public void setImageOnClick(SwitchMaterial data, int position) {
-        TimePicker picker = new TimePicker();
-        picker.setTargetFragment(alarm.this, 1);
-        picker.show(getParentFragmentManager(), "clock_date_picker");
-        this.position = position;
 
-
-    }
-
-    @Override
-    public void setOnToggle(boolean on_off,int id) {
-            Toast.makeText(getActivity(), "The:"+on_off, Toast.LENGTH_SHORT).show();
-            cancelAlarm(id);
-                r.stop();
+    private void callService(Intent my_intent,int hour, int minute) {
+        Objects.requireNonNull(getActivity()).stopService(my_intent);
+        my_intent.putExtra("hour", hour);
+        my_intent.putExtra("minute", minute);
+        my_intent.putExtra("calender", calendar.getTimeInMillis());
+        Log.e("No service", "callService: No service Intent" + my_intent.hasExtra("calender"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getActivity().startForegroundService(my_intent);
+        }
     }
 
 
-    @Override
-    public void onOkPressed(String title, Calendar date) {
-        pvm.insertData(new Data(DateFormat.getTimeInstance().format(date.getTime()),title));
-        createAlarm(date);
-    }
 }
+

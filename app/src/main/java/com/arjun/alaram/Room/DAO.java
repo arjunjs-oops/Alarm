@@ -26,6 +26,6 @@ public interface DAO{
     void deleteAlarm(Data...data);
 
 
-    @Query("SELECT * from alarm ORDER BY uid DESC")
-    LiveData<List<Data>> getAllData();
+    @Query("SELECT * from alarm ")
+    LiveData<Data>getAllData();
 }

@@ -30,7 +30,7 @@ public class PVM extends AndroidViewModel {
          });
 
     }
-    public LiveData<List<Data>> getAllData(){
+    public LiveData<Data> getAllData(){
         return dao.getAllData();
     }
     public void updateData(final Data data){

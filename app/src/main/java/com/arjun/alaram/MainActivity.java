@@ -21,17 +21,12 @@ public class MainActivity extends AppCompatActivity {
     public static final String HOME ="home";
     public static final String OTHERS = "others";
     private BottomNavigationView bottomNavigationView;
-    private Fragment alarm;
-    private Fragment timer;
-    private Fragment clock;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-         alarm = new alarm();
-         clock = new clock();
-         timer = new timer();
         bottomNavigationView = findViewById(R.id.bni);
         getSupportFragmentManager()
                 .beginTransaction()
@@ -45,21 +40,18 @@ public class MainActivity extends AppCompatActivity {
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.alarm:
-                    viewFragment(alarm,HOME);
+                    viewFragment( new alarm(),HOME);
                     break;
                 case R.id.clock:
-                    viewFragment(clock,OTHERS);
+                    viewFragment(new clock(),OTHERS);
                     break;
                 case R.id.timer:
-                    viewFragment(timer,OTHERS);
+                    viewFragment(new timer(),OTHERS);
                     break;
             }
             return true;
         }
     };
-
-
-
 
 
 
