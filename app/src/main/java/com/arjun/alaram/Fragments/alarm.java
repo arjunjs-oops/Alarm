@@ -26,30 +26,30 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import com.arjun.alaram.Broadcast.RingtonePlayingService;
-import com.arjun.alaram.Broadcast.Singleton;
 import com.arjun.alaram.R;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.Calendar;
 import java.util.Objects;
 
-import static android.content.Context.ALARM_SERVICE;
+
 
 
 public class alarm extends Fragment{
-   public static boolean isActive = true;
-    AlarmManager alarm_manager;
-    TextView alarm_state;
-    TimePicker timePicker;
-    RelativeLayout layout;
-    Boolean pendingIntent;
-    Calendar calendar;
+    private boolean isSent = false;
+    private boolean isAlarmSet =false;
+    private TextView alarm_state;
+    private TimePicker timePicker;
+    private RelativeLayout layout;
+    private Boolean pendingIntent;
+    private Calendar calendar;
     private static final String NamePreference="AlarmAppPreference";
-    SharedPreferences preferences ;
-    SharedPreferences.Editor editor;
-    Intent my_intent;
-    int hour,minute;
-    BroadcastReceiver stopServiceReceiver;
-    Button alarm_off, alarm_on ;
+    private SharedPreferences preferences ;
+    private SharedPreferences.Editor editor;
+    private Intent my_intent;
+    private int hour,minute;
+    private BroadcastReceiver stopServiceReceiver;
+    private Button alarm_off, alarm_on ;
 
 
     public alarm() {
@@ -91,7 +91,6 @@ public class alarm extends Fragment{
 
         timePicker =view.findViewById(R.id.timePicker);
         layout =view.findViewById(R.id.parent);
-        alarm_manager = (AlarmManager) getActivity().getSystemService(ALARM_SERVICE);
         alarm_state = (TextView) view.findViewById(R.id.alarm_state);
         alarm_off = (Button) view.findViewById(R.id.alarm_off);
         alarm_on = (Button) view.findViewById(R.id.alarm_on);
@@ -118,7 +117,11 @@ public class alarm extends Fragment{
             public void onReceive(Context context, Intent intent) {
                 Log.e("From Service", "onReceive: Data Arrived");
                 getActivity().stopService(my_intent);
+
+                //Set some property
                 alarm_state.setText("Alarm cancelled");
+                isAlarmSet=false;
+                alarm_on.setClickable(true);
             }
         };
         getActivity().registerReceiver(stopServiceReceiver,filter);
@@ -128,12 +131,21 @@ public class alarm extends Fragment{
     Button.OnClickListener alarm_offListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if (pendingIntent) {
+            if (pendingIntent && isAlarmSet) {
                 getActivity().stopService(new Intent(getActivity(), RingtonePlayingService.class));
                 alarm_state.setText("Alarm Off!");
                 editor.putString("Time", null);
+                isSent =true;
+                isAlarmSet=false;
+                alarm_on.setClickable(true);
                 editor.putBoolean("pendingIntent", false);
                 editor.commit();
+            }else {
+                Snackbar.make(getView(), "No Alarm is set", Snackbar.LENGTH_SHORT)
+                        .setAnchorView(getActivity().findViewById(R.id.bni))
+                        .setTextColor(getActivity().getColor(R.color.design_default_color_surface))
+                        .setBackgroundTint(getActivity().getColor(R.color.colorPrimaryDark))
+                        .show();
             }
         }
     };
@@ -146,6 +158,7 @@ public class alarm extends Fragment{
             calendar.set(Calendar.MINUTE, timePicker.getMinute());
              hour = timePicker.getHour();
              minute = timePicker.getMinute();
+             alarm_on.setClickable(false);
             String hour_string = String.valueOf(hour);
             String minute_string = String.valueOf(minute);
             // Handles to format time data
@@ -154,12 +167,17 @@ public class alarm extends Fragment{
             String quote = "Alarm set to: " + hour_string + ":" + minute_string;
             alarm_state.setText(quote);
             editor.putString("Time",quote);
+            Snackbar.make(getView(), "Alarm set for "+hour_string+":"+minute_string, Snackbar.LENGTH_SHORT)
+                    .setAnchorView(getActivity().findViewById(R.id.bni))
+                    .setTextColor(getActivity().getColor(R.color.design_default_color_surface))
+                    .setBackgroundTint(getActivity().getColor(R.color.design_default_color_primary))
+                    .show();
             editor.commit();
+            isAlarmSet=true;
+            isSent =true;
             editor.putBoolean("pendingIntent",true);
             pendingIntent=true;
             editor.commit();
-            // Create intent for AlarmReceiver class, send only once
-
             callService(my_intent,hour,minute);
 
 
@@ -184,7 +202,7 @@ public class alarm extends Fragment{
     @Override
     public void onDestroy() {
         my_intent.putExtra("isDestroyed",true);
-        callService(my_intent,hour,minute);
+        if(isSent) callService(my_intent,hour,minute);
         super.onDestroy();
     }
 }
