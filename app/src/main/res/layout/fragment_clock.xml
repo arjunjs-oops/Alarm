@@ -19,7 +19,7 @@
           android:id="@+id/clock"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:format12Hour="hh:mm"
+          android:format12Hour="hh:mm a"
           android:lines="2"
           android:textColor="@color/colorPrimary"
           android:textSize="30sp" />
@@ -28,6 +28,7 @@
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="Sat,Sept 19"
+          android:id="@+id/date"
           android:textSize="20sp" />
 
    </LinearLayout>
