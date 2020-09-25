@@ -116,11 +116,13 @@ public class alarm extends Fragment{
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.e("From Service", "onReceive: Data Arrived");
+                my_intent = new Intent(getActivity().getApplicationContext(), RingtonePlayingService.class);
                 getActivity().stopService(my_intent);
 
                 //Set some property
                 alarm_state.setText("Alarm cancelled");
                 isAlarmSet=false;
+                isSent= false;
                 alarm_on.setClickable(true);
             }
         };
@@ -135,9 +137,11 @@ public class alarm extends Fragment{
                 getActivity().stopService(new Intent(getActivity(), RingtonePlayingService.class));
                 alarm_state.setText("Alarm Off!");
                 editor.putString("Time", null);
-                isSent =true;
+                isSent =false;
                 isAlarmSet=false;
                 alarm_on.setClickable(true);
+                editor.putString("Time","Did You set the Time?");
+                editor.commit();
                 editor.putBoolean("pendingIntent", false);
                 editor.commit();
             }else {
@@ -179,8 +183,6 @@ public class alarm extends Fragment{
             pendingIntent=true;
             editor.commit();
             callService(my_intent,hour,minute);
-
-
 
 
 
