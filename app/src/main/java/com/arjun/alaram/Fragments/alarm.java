@@ -26,6 +26,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import com.arjun.alaram.Broadcast.RingtonePlayingService;
+import com.arjun.alaram.MainActivity;
 import com.arjun.alaram.R;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -108,7 +109,7 @@ public class alarm extends Fragment{
         super.onViewCreated(view, savedInstanceState);
         alarm_off.setOnClickListener(alarm_offListener);
         alarm_on.setOnClickListener(alarm_onListener);
-        alarm_state.setText(preferences.getString("Time","Did You set the alarm"));
+        alarm_state.setText(preferences.getString("Time","Did you set the alarm"));
         my_intent = new Intent(getActivity().getApplicationContext(), RingtonePlayingService.class);
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.arjun.alarm.java");
@@ -116,13 +117,14 @@ public class alarm extends Fragment{
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.e("From Service", "onReceive: Data Arrived");
-                my_intent = new Intent(getActivity().getApplicationContext(), RingtonePlayingService.class);
+                my_intent = new Intent(getActivity(), RingtonePlayingService.class);
                 getActivity().stopService(my_intent);
-
                 //Set some property
                 alarm_state.setText("Alarm cancelled");
                 isAlarmSet=false;
                 isSent= false;
+                editor.putString("Time","Did you set the alarm?");
+                editor.commit();
                 alarm_on.setClickable(true);
             }
         };
@@ -140,7 +142,7 @@ public class alarm extends Fragment{
                 isSent =false;
                 isAlarmSet=false;
                 alarm_on.setClickable(true);
-                editor.putString("Time","Did You set the Time?");
+                editor.putString("Time","Did you set the alarm?");
                 editor.commit();
                 editor.putBoolean("pendingIntent", false);
                 editor.commit();
@@ -204,7 +206,10 @@ public class alarm extends Fragment{
     @Override
     public void onDestroy() {
         my_intent.putExtra("isDestroyed",true);
-        if(isSent) callService(my_intent,hour,minute);
+        if(isSent) {
+            callService(my_intent,hour,minute);
+            getActivity().unregisterReceiver(stopServiceReceiver);
+        }
         super.onDestroy();
     }
 }
